@@ -387,7 +387,7 @@ contiene las conexiones utilizadas en la simulación.
 Ingeniería Mecatrónica
 
 * Johan Andrés Canchala
-* [Nombre del segundo integrante]
+* Luis Miguel Ruiz
 
 ---
 
