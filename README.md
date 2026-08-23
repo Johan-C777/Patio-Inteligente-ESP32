@@ -1,203 +1,95 @@
 # 🌿 Patio Inteligente con ESP32
 
-Sistema de automatización para una maqueta de patio inteligente desarrollado con **ESP32**, **MicroPython**, una interfaz web en **HTML/CSS/JavaScript** y control mediante **Wi-Fi y comandos de voz**.
+Proyecto académico de automatización de un patio inteligente mediante **ESP32 + MicroPython**, con control desde una **interfaz web** por Wi‑Fi y una capa adicional de **reconocimiento de voz en el navegador**.
 
-El proyecto permite controlar distintos elementos del patio desde un computador o celular conectado a la misma red.
-
----
+El sistema controla una puerta, una silla orientable, una fuente, una regadera e iluminación RGB. También incluye modos automáticos que combinan varios actuadores.
 
 ## ⚙️ Funcionalidades
 
-El sistema permite controlar:
+- 🚪 Puerta inteligente mediante servomotor.
+- 🪑 Silla orientable: izquierda, centro y derecha.
+- ⛲ Fuente de agua mediante bomba.
+- 🌱 Regadera con apagado automático aproximado de 5 s.
+- 🌈 Iluminación RGB por PWM.
+- 🎛️ Modos noche, relajación, fiesta y salida.
+- 🌐 Control desde navegador mediante Wi‑Fi.
+- 🎙️ Reconocimiento de voz mediante Web Speech API cuando el navegador lo permite.
 
-* 🚪 **Puerta inteligente**
+## 🧩 Arquitectura modular
 
-  * Abrir
-  * Cerrar
+El proyecto fue organizado aplicando **separación de responsabilidades**. Cada archivo se encarga de una parte concreta del sistema, evitando concentrar toda la lógica en `main.py` o `index.html`.
 
-* 🪑 **Silla orientable**
+```mermaid
+flowchart TD
+    U[Usuario] --> F[Frontend]
+    F -->|POST /api/command| S[Servidor HTTP]
+    F -->|GET /api/status| S
+    S --> C[Procesamiento de comandos]
+    C --> M[Modos]
+    C --> A[Actuadores]
+    M --> A
+    A --> H[Servos / Bombas / RGB]
 
-  * Izquierda
-  * Centro
-  * Derecha
-
-* ⛲ **Fuente de agua**
-
-  * Encender
-  * Apagar
-
-* 🌱 **Regadera automática**
-
-  * Activación manual
-  * Apagado automático después de aproximadamente 5 segundos
-
-* 🌈 **Iluminación RGB**
-
-  * Rojo
-  * Verde
-  * Azul
-  * Blanco
-  * Morado
-  * Apagado
-
-* 🎛️ **Modos automáticos**
-
-  * Modo noche
-  * Modo relajación
-  * Modo fiesta
-  * Modo salida
-
-* 🎙️ **Control por voz**
-
-  * Reconocimiento de comandos desde la interfaz web
-
----
-
-## 🧠 Arquitectura del sistema
-
-```text
-             Usuario
-                │
-        ┌───────┴───────┐
-        │               │
-       PC            Celular
-        │               │
-        └───────┬───────┘
-                │
-          Interfaz HTML
-        Botones + Voz
-                │
-              Wi-Fi
-                │
-                ▼
-              ESP32
-           MicroPython
-                │
-     ┌──────────┼──────────┐
-     │          │          │
-   Servos     Bombas      RGB
-     │          │          │
- Puerta      Fuente    Iluminación
- Silla       Regadera
+    V[Reconocimiento de voz] --> F
 ```
 
-La interfaz web envía comandos al servidor HTTP ejecutado directamente en el ESP32.
-
-Ejemplo:
-
-```text
-Usuario pulsa "Abrir puerta"
-        ↓
-index.html
-        ↓
-POST /api/command
-        ↓
-main.py
-        ↓
-procesar_comando()
-        ↓
-abrir_puerta()
-        ↓
-Servo GPIO 13
-```
-
----
-
-## 🔌 Asignación de GPIO
-
-| Elemento       |    GPIO |
-| -------------- | ------: |
-| Servo puerta   | GPIO 13 |
-| Servo silla    | GPIO 14 |
-| Bomba fuente   | GPIO 25 |
-| Bomba regadera | GPIO 26 |
-| RGB rojo       | GPIO 18 |
-| RGB verde      | GPIO 19 |
-| RGB azul       | GPIO 21 |
-
-> ⚠️ Las bombas **no deben conectarse directamente al ESP32**.
-> Deben utilizar un MOSFET, transistor o módulo de potencia adecuado.
-
-Todos los módulos deben compartir una referencia común de **GND**.
-
----
-
-## 📦 Estructura del repositorio
+## 📁 Estructura del repositorio
 
 ```text
 Patio-Inteligente-ESP32/
 │
-├── main.py
-├── index.html
-├── diagram.json
+├── main.py              # Punto de entrada del sistema
+├── config.py            # Wi-Fi, GPIO y constantes generales
+├── estado.py            # Estado compartido del patio
+├── actuadores.py        # Servos, bombas, RGB y temporizaciones
+├── modos.py             # Escenas automáticas
+├── comandos.py          # Normalización y despacho de comandos
+├── red.py               # Wi-Fi y modo Access Point
+├── servidor.py          # Servidor HTTP, API y archivos frontend
+│
+├── frontend/
+│   ├── index.html       # Estructura visual
+│   ├── styles.css       # Diseño y estilos
+│   ├── api.js           # Comunicación HTTP con el ESP32
+│   ├── voice.js         # Reconocimiento e interpretación de voz
+│   └── app.js           # Eventos, estados y coordinación del frontend
+│
+├── evidencias/
+│   └── ...
+│
+├── diagram.json         # Simulación de Wokwi
 └── README.md
 ```
 
-### `main.py`
+## 🖥️ Frontend: explicación de `index.html`
 
-Programa principal ejecutado por el ESP32 mediante MicroPython.
+El frontend ya no está concentrado en un único archivo. Se separó en **HTML, CSS y JavaScript modular** para facilitar mantenimiento y correcciones.
 
-Incluye:
+### `frontend/index.html`
 
-* control de servomotores;
-* control de bombas;
-* PWM para RGB;
-* modos automáticos;
-* conexión Wi-Fi;
-* servidor HTTP;
-* API de comandos;
-* estado del sistema.
+Contiene únicamente la **estructura de la interfaz**: tarjetas, botones, indicadores, panel de estado y controles de voz. No contiene la lógica del ESP32 ni grandes bloques de CSS o JavaScript.
 
-### `index.html`
+El archivo carga los módulos externos:
 
-Interfaz web responsive que permite controlar el sistema desde PC o celular.
-
-Incluye:
-
-* botones de control;
-* visualización del estado;
-* control RGB;
-* modos automáticos;
-* reconocimiento de voz.
-
-### `diagram.json`
-
-Archivo correspondiente al circuito utilizado durante la simulación en **Wokwi**.
-
----
-
-## 🌐 Comunicación
-
-El ESP32 funciona como servidor web.
-
-La interfaz utiliza principalmente dos rutas:
-
-### Estado del sistema
-
-```http
-GET /api/status
+```html
+<link rel="stylesheet" href="styles.css">
+<script src="api.js" defer></script>
+<script src="voice.js" defer></script>
+<script src="app.js" defer></script>
 ```
 
-Devuelve información como:
+### `frontend/styles.css`
 
-```json
-{
-  "puerta": "cerrada",
-  "silla": "centro",
-  "fuente": false,
-  "riego": false,
-  "color": "apagado",
-  "modo": "normal"
-}
-```
+Contiene toda la presentación visual de la página: distribución responsive, tarjetas, botones, colores, animaciones e indicadores.
 
-### Enviar comandos
+### `frontend/api.js`
 
-```http
-POST /api/command
-```
+Se encarga exclusivamente de la comunicación HTTP con el ESP32.
 
-Ejemplo:
+- `POST /api/command` → envía una orden.
+- `GET /api/status` → consulta el estado actual.
+
+Ejemplo de comando enviado:
 
 ```json
 {
@@ -205,192 +97,198 @@ Ejemplo:
 }
 ```
 
-Todos los comandos terminan pasando por una función central:
+### `frontend/voice.js`
+
+Contiene únicamente la parte de voz. Utiliza:
+
+```javascript
+window.SpeechRecognition || window.webkitSpeechRecognition
+```
+
+El navegador convierte la voz a texto y el módulo interpreta frases naturales para transformarlas en comandos estándar como:
+
+```text
+"abre la puerta" → "abrir puerta"
+```
+
+El ESP32 no procesa audio; recibe únicamente el comando de texto.
+
+### `frontend/app.js`
+
+Es el coordinador del frontend. Maneja:
+
+- eventos de los botones;
+- actualización visual de estados;
+- temporizador visual de la regadera;
+- conexión entre `voice.js` y `api.js`;
+- consulta periódica de `/api/status`.
+
+## 🐍 Backend MicroPython
+
+### `main.py`
+
+Es el punto de entrada. Su responsabilidad se redujo a:
+
+1. inicializar el hardware;
+2. iniciar la red;
+3. iniciar el servidor HTTP;
+4. mantener el ciclo principal.
+
+### `config.py`
+
+Centraliza parámetros que pueden cambiar sin modificar la lógica del programa:
+
+- credenciales Wi‑Fi;
+- GPIO;
+- posiciones de los servos;
+- tiempos de riego y modo fiesta;
+- configuración de bombas y RGB.
+
+### `estado.py`
+
+Mantiene un único diccionario compartido con el estado actual:
 
 ```python
+estado = {
+    "puerta": "cerrada",
+    "silla": "centro",
+    "fuente": False,
+    "riego": False,
+    "color": "apagado",
+    "modo": "normal"
+}
+```
+
+### `actuadores.py`
+
+Controla directamente el hardware:
+
+- PWM de servomotores;
+- bombas;
+- iluminación RGB;
+- temporización no bloqueante del riego;
+- secuencia RGB del modo fiesta.
+
+### `modos.py`
+
+Agrupa acciones de varios actuadores para crear las escenas automáticas.
+
+### `comandos.py`
+
+Centraliza el despacho de órdenes mediante `procesar_comando()`.
+
+Ejemplo:
+
+```text
+"abrir puerta"
+      ↓
 procesar_comando()
+      ↓
+actuadores.abrir_puerta()
 ```
 
-De esta forma, los botones y el control por voz utilizan la misma lógica de control.
+### `red.py`
 
----
+Gestiona la conexión a una red Wi‑Fi y, si falla, puede crear el punto de acceso local `PatioInteligente`.
 
-## 🎙️ Comandos disponibles
+### `servidor.py`
 
-### Puerta
+Implementa el servidor HTTP del ESP32. Sirve los archivos de `frontend/` y expone la API utilizada por JavaScript.
+
+## 🔌 Pines
+
+| Elemento | GPIO |
+|---|---:|
+| Servo puerta | 13 |
+| Servo silla | 14 |
+| Bomba fuente | 25 |
+| Bomba regadera | 26 |
+| RGB rojo | 18 |
+| RGB verde | 19 |
+| RGB azul | 21 |
+
+> Las bombas no deben conectarse directamente a los GPIO del ESP32. Deben utilizar una etapa de potencia adecuada y compartir GND con el sistema.
+
+## 🌐 Flujo de una orden
 
 ```text
-abrir puerta
-cerrar puerta
+Botón o voz
+    ↓
+frontend/app.js
+    ↓
+frontend/api.js
+    ↓
+POST /api/command
+    ↓
+servidor.py
+    ↓
+comandos.py
+    ↓
+actuadores.py / modos.py
+    ↓
+Hardware
 ```
 
-### Silla
+Tanto los botones como la voz terminan utilizando **el mismo camino de ejecución**, evitando duplicar lógica.
 
-```text
-silla izquierda
-silla centro
-silla derecha
+## 📊 Actualización del estado
+
+La interfaz consulta periódicamente:
+
+```http
+GET /api/status
 ```
 
-### Fuente
+El ESP32 responde en JSON y `app.js` actualiza los indicadores de puerta, silla, fuente, riego, iluminación y modo.
 
-```text
-encender fuente
-apagar fuente
-```
+## 📡 Configuración Wi‑Fi
 
-### Regadera
-
-```text
-regar
-detener riego
-```
-
-### Iluminación
-
-```text
-luz roja
-luz verde
-luz azul
-luz blanca
-luz morada
-apagar luces
-```
-
-### Modos
-
-```text
-modo noche
-modo relajacion
-modo fiesta
-modo salida
-```
-
----
-
-## 🎛️ Modos automáticos
-
-| Modo          | Funcionamiento                                                                   |
-| ------------- | -------------------------------------------------------------------------------- |
-| 🌙 Noche      | Cierra la puerta, centra la silla, enciende la fuente y activa iluminación tenue |
-| 🧘 Relajación | Centra la silla, enciende la fuente y activa iluminación azul/cian               |
-| 🎉 Fiesta     | Enciende la fuente y ejecuta una secuencia automática de colores RGB             |
-| 🚪 Salida     | Detiene riego, apaga fuente y luces, cierra puerta y centra la silla             |
-
----
-
-## 💻 Configuración del ESP32
-
-El proyecto utiliza **MicroPython**.
-
-Para cargar los archivos se recomienda utilizar **Thonny**.
-
-Los archivos que deben almacenarse dentro del ESP32 son:
-
-```text
-main.py
-index.html
-```
-
----
-
-## 📡 Configuración Wi-Fi
-
-Dentro de `main.py` se deben modificar:
+Editar en `config.py`:
 
 ```python
 WIFI_SSID = "NOMBRE_DE_LA_RED"
 WIFI_PASSWORD = "CONTRASEÑA"
 ```
 
-Al iniciar, el ESP32 intentará conectarse a esa red.
+Si no puede conectarse y `USAR_AP_SI_FALLA` está activo, el ESP32 crea una red propia.
 
-Cuando la conexión sea exitosa, la consola mostrará una dirección IP similar a:
+## 💾 Archivos que deben cargarse al ESP32
 
-```text
-WiFi conectado
-IP: 192.168.1.XX
-```
-
-Desde un computador o celular conectado a la misma red se debe abrir:
+En la memoria del ESP32 se deben conservar los módulos Python en la raíz y la carpeta `frontend/` completa:
 
 ```text
-http://192.168.1.XX/
+/
+├── main.py
+├── config.py
+├── estado.py
+├── actuadores.py
+├── modos.py
+├── comandos.py
+├── red.py
+├── servidor.py
+└── frontend/
+    ├── index.html
+    ├── styles.css
+    ├── api.js
+    ├── voice.js
+    └── app.js
 ```
 
----
-
-## 📶 Modo de respaldo
-
-Si el ESP32 no puede conectarse a la red configurada, el programa puede crear una red propia:
-
-```text
-PatioInteligente
-```
-
-Contraseña:
-
-```text
-patio1234
-```
-
-Después de conectarse a esta red se puede acceder a la IP indicada por el ESP32.
-
----
+`main.py` se ejecuta como punto de entrada y `servidor.py` entrega al navegador los archivos almacenados en `frontend/`.
 
 ## 🧪 Simulación
 
-El control de los actuadores fue verificado mediante **Wokwi**.
+La lógica inicial de actuadores fue comprobada en Wokwi utilizando dos servomotores, un RGB y dos LEDs como representación lógica de las bombas. El archivo `diagram.json` conserva el montaje de simulación.
 
-Durante la simulación:
+## 🛠️ Tecnologías
 
-* dos servomotores representan puerta y silla;
-* dos LEDs representan las bombas de fuente y regadera;
-* un LED RGB representa la iluminación del patio.
-
-El archivo:
-
-```text
-diagram.json
-```
-
-contiene las conexiones utilizadas en la simulación.
-
----
-
-## 🛠️ Software utilizado
-
-* MicroPython
-* Thonny
-* Wokwi
-* HTML
-* CSS
-* JavaScript
-* GitHub
-
----
-
-## 📱 Uso
-
-1. Encender el ESP32.
-2. Esperar la conexión Wi-Fi.
-3. Consultar la IP mostrada en Thonny.
-4. Abrir la IP desde el navegador.
-5. Utilizar los botones de la interfaz o el botón de micrófono.
-6. Verificar la respuesta de los actuadores.
-
----
-
-## 👥 Integrantes
-
-**Universidad Militar Nueva Granada**
-Ingeniería Mecatrónica
-
-* Johan Andrés Canchala
-* Luis Miguel Ruiz
-
----
-
-## 📚 Proyecto académico
-
-Proyecto desarrollado como aplicación de sistemas embebidos, automatización, programación en Python, comunicación Wi-Fi e integración de interfaces hombre-máquina mediante ESP32.
+- ESP32
+- MicroPython
+- HTML5
+- CSS3
+- JavaScript
+- Fetch API / HTTP
+- Web Speech API
+- JSON
+- Wokwi
+- GitHub
