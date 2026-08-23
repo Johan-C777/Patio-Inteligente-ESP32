@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Patio Inteligente</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="api.js" defer></script>
+  <script src="voice.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+<div class="envoltorio">
+
+  <header class="panel-encabezado">
+    <div class="titulo-bloque">
+      <h1>Patio Inteligente</h1>
+      <div class="subtitulo">ESP32 &middot; MicroPython &middot; <span id="ip-esp32">esperando estado...</span></div>
+    </div>
+    <div class="estado-conexion">
+      <span class="punto-luz" id="punto-conexion"></span>
+      <span id="texto-conexion">ESP32 sin respuesta ❌</span>
+    </div>
+  </header>
+
+  <div class="ticker-comando" id="ticker-comando">
+    <span class="marca">&raquo;</span> Aun no se ha enviado ningun comando.
+  </div>
+
+  <div class="rejilla">
+    <section class="tarjeta">
+      <span class="placa">GPIO 13 &middot; SERVO</span>
+      <h2>Puerta</h2>
+      <div class="estado-actual">Estado: <b id="estado-puerta">--</b></div>
+      <div class="fila-botones">
+        <button class="btn" data-comando="abrir puerta">Abrir</button>
+        <button class="btn" data-comando="cerrar puerta">Cerrar</button>
+      </div>
+    </section>
+
+    <section class="tarjeta">
+      <span class="placa">GPIO 14 &middot; SERVO</span>
+      <h2>Silla</h2>
+      <div class="estado-actual">Posicion: <b id="estado-silla">--</b></div>
+      <div class="fila-botones">
+        <button class="btn" data-comando="silla izquierda">Izquierda</button>
+        <button class="btn" data-comando="silla centro">Centro</button>
+        <button class="btn" data-comando="silla derecha">Derecha</button>
+      </div>
+    </section>
+
+    <section class="tarjeta">
+      <span class="placa">GPIO 25 &middot; MOSFET</span>
+      <h2>Fuente</h2>
+      <div class="estado-actual">Estado: <b id="estado-fuente">--</b></div>
+      <div class="fila-botones">
+        <button class="btn" data-comando="encender fuente">Encender</button>
+        <button class="btn peligro" data-comando="apagar fuente">Apagar</button>
+      </div>
+    </section>
+
+    <section class="tarjeta">
+      <span class="placa">GPIO 26 &middot; MOSFET</span>
+      <h2>Regadera</h2>
+      <div class="estado-actual">Estado: <b id="estado-riego">--</b></div>
+      <div class="fila-botones">
+        <button class="btn" data-comando="regar">Regar</button>
+        <button class="btn peligro" data-comando="detener riego">Detener</button>
+      </div>
+      <div id="barra-riego"><div class="relleno"></div></div>
+      <p class="nota-riego">El riego normal se apaga solo despues de aproximadamente 5 segundos.</p>
+    </section>
+
+    <section class="tarjeta">
+      <span class="placa">GPIO 18/19/21 &middot; PWM</span>
+      <h2>Iluminacion RGB</h2>
+      <div class="estado-actual">Color: <b id="estado-color">--</b></div>
+      <div class="fila-botones">
+        <button class="btn btn-color" data-comando="luz roja"><span class="muestra-color color-rojo"></span>Roja</button>
+        <button class="btn btn-color" data-comando="luz verde"><span class="muestra-color color-verde"></span>Verde</button>
+        <button class="btn btn-color" data-comando="luz azul"><span class="muestra-color color-azul"></span>Azul</button>
+        <button class="btn btn-color" data-comando="luz blanca"><span class="muestra-color color-blanco"></span>Blanca</button>
+        <button class="btn btn-color" data-comando="luz morada"><span class="muestra-color color-morado"></span>Morada</button>
+        <button class="btn peligro" data-comando="apagar luces">Apagar</button>
+      </div>
+    </section>
+
+    <section class="tarjeta escenas">
+      <span class="placa">ESCENAS &middot; VARIOS ACTUADORES</span>
+      <h2>Modos</h2>
+      <div class="rejilla-escenas">
+        <button class="btn-escena" data-comando="modo noche">
+          <span class="eyebrow">ESCENA</span><span class="nombre">🌙 Modo noche</span>
+        </button>
+        <button class="btn-escena" data-comando="modo relajacion">
+          <span class="eyebrow">ESCENA</span><span class="nombre">🧘 Relajacion</span>
+        </button>
+        <button class="btn-escena" data-comando="modo fiesta">
+          <span class="eyebrow">ESCENA</span><span class="nombre">🎉 Fiesta</span>
+        </button>
+        <button class="btn-escena" data-comando="modo salida">
+          <span class="eyebrow">ESCENA</span><span class="nombre">🚪 Salida</span>
+        </button>
+      </div>
+      <div class="estado-actual modo-estado">Modo actual: <b id="estado-modo">--</b></div>
+    </section>
+
+    <section class="tarjeta voz">
+      <div class="voz-columna-boton">
+        <button id="btn-mic" title="Hablar">🎙️</button>
+        <span class="voz-etiqueta" id="etiqueta-mic">Hablar</span>
+      </div>
+      <div class="voz-consola">
+        <div class="linea"><span class="clave">Frase:</span><span class="valor" id="voz-frase">--</span></div>
+        <div class="linea"><span class="clave">Comando:</span><span class="valor" id="voz-comando">--</span></div>
+        <div class="linea"><span class="clave">Resultado:</span><span class="valor" id="voz-resultado">--</span></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="panel-estado">
+    <div class="titulo-panel">Estado del sistema (/api/status)</div>
+    <pre id="json-estado">--</pre>
+  </div>
+
+  <footer>Patio Inteligente &middot; Ingenieria Mecatronica &middot; Control local por Wi-Fi</footer>
+</div>
+</body>
+</html>
